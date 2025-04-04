@@ -1,10 +1,4 @@
-try:
-    import feedparser
-except ImportError:
-    import subprocess
-    subprocess.check_call(["pip", "install", "feedparser"])
-    import feedparser
-
+import feedparser
 import os
 import json
 import requests
@@ -14,6 +8,8 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build as build_docs
 from googleapiclient.discovery import build as build_drive
 import openai
+import asyncio
+from edge_tts import Communicate
 
 # Load environment variables
 load_dotenv()
@@ -36,6 +32,7 @@ drive_service = build_drive('drive', 'v3', credentials=credentials)
 # Telegram setup
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+user_email = os.environ.get("GMAIL_SHARE_TO")
 
 TODAY = datetime.utcnow().date()
 
@@ -47,8 +44,7 @@ feeds = [
     "https://cn.wsj.com/zh-hant/rss",
     # "https://www.scmp.com/rss/2/feed",
     # "https://www.economist.com/finance-and-economics/rss.xml",
-    # "https://www.paperdigest.org/feed/",
-    # "http://feeds.feedburner.com/nytcn"
+    # "https://www.paperdigest.org/feed/", "http://feeds.feedburner.com/nytcn"
 ]
 
 
@@ -120,18 +116,12 @@ def summarize_with_openai(text):
 
 
 def create_voice(text, filename="summary.mp3"):
-    response = requests.post("https://api.pinokio.ai/tts",
-                             json={
-                                 "text": text,
-                                 "lang": "zh-HK",
-                                 "voice": "female",
-                                 "speed": 1.0
-                             })
-    if response.status_code != 200:
-        raise Exception(
-            f"❌ Pinokio 語音生成失敗: {response.status_code} {response.text}")
-    with open(filename, "wb") as f:
-        f.write(response.content)
+
+    async def _run():
+        communicate = Communicate(text, voice="zh-HK-HiuMaanNeural")
+        await communicate.save(filename)
+
+    asyncio.run(_run())
     return filename
 
 
@@ -164,10 +154,18 @@ from flask import Flask, request
 app = Flask(__name__)
 
 
-@app.route("/run", methods=["GET"])
+@app.route("/")
+def index():
+    return "👋 歡迎來到 AI 西施惠新聞機器人！請使用 /run 路由來觸發每日摘要。"
+
+
+@app.route("/run")
 def run_digest():
+    secret = request.args.get("token")
+    if secret != os.getenv("RUN_TOKEN"):
+        return "Unauthorized", 403
     main()
-    return "✅ Digest generated successfully."
+    return "✅ Done"
 
 
 if __name__ == "__main__":
