@@ -24,6 +24,7 @@ SCOPES = [
 ]
 SERVICE_ACCOUNT_INFO = json.loads(
     os.environ["GOOGLE_CREDENTIALS_JSON_CONTENT"])
+
 credentials = service_account.Credentials.from_service_account_info(
     SERVICE_ACCOUNT_INFO, scopes=SCOPES)
 docs_service = build_docs('docs', 'v1', credentials=credentials)

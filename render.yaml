@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: daily-rss-voice-bot
+    env: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 main.py
+    envVars:
+      - fromGroup: rss-voice-bot-secrets
