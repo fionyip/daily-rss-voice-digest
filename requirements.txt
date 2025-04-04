@@ -1,5 +1,15 @@
 feedparser
-openai
+openai==0.28
+edge_tts
 python-dotenv
 requests
 elevenlabs
+feedparser
+python-dotenv
+google-api-python-client
+google-auth
+google-auth-oauthlib
+edge-tts
+openai
+flask
+asyncio
